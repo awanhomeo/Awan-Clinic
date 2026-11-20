@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123b35"><link rel="manifest" href="manifest.json">
+<title>اعوان ہومیوپیتھک کلینک | Patient Manager</title>
+<style>
+:root{--green:#123b35;--gold:#c59b4b;--bg:#f3f6f5;--line:#dce5e1}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,"Noto Nastaliq Urdu",sans-serif;color:#172b27}
+header{background:var(--green);color:white;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:23px}header small{color:#e6d5ae}
+main{max-width:1200px;margin:20px auto;padding:0 14px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+button,.btn{border:0;border-radius:8px;padding:10px 15px;background:var(--green);color:white;cursor:pointer;font-size:14px}
+button.secondary{background:#e4ece8;color:#173b34}button.gold{background:var(--gold);color:#172b27}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #173b3409}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-weight:600;font-size:14px;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd8d2;border-radius:8px;font:inherit;background:white}
+textarea{min-height:85px;resize:vertical}.full{grid-column:1/-1}.muted{color:#63756e;font-size:13px}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}th{background:#edf3f0}
+.tablewrap{overflow:auto}.hidden{display:none!important}.actions{display:flex;gap:6px;flex-wrap:wrap}.medicine{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin:8px 0}
+.cardtitle{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+#status{font-size:13px;color:#e8d9b5}.pill{background:#e8f1ec;padding:4px 8px;border-radius:20px;font-size:12px}
+@media(max-width:600px){header h1{font-size:19px}.medicine{grid-template-columns:1fr}.panel{padding:13px}}
+@media print{header,.tabs,.no-print{display:none!important}body{background:white}.panel{border:0;box-shadow:none}main{max-width:none;margin:0;padding:0}}
+</style></head>
+<body>
+<header><div><h1>اعوان ہومیوپیتھک کلینک</h1><small>AWAN HOMOEOPATHIC CLINIC · Patient Management</small></div><div id="status">آف لائن ڈیٹا محفوظ</div></header>
+<main>
+<div class="tabs no-print">
+<button onclick="show('form')">نیا مریض / New Patient</button><button class="secondary" onclick="show('search')">مریض تلاش کریں / Search</button>
+<button class="secondary" onclick="show('settings')">سنک اور سیٹنگز</button>
+</div>
+<section id="form" class="panel">
+<div class="cardtitle"><h2 id="formTitle">نیا مریض درج کریں</h2><span class="pill" id="serialLabel">نیا سیریل نمبر خودکار</span></div>
+<form id="patientForm">
+<input type="hidden" id="patientId"><input type="hidden" id="visitId">
+<div class="grid">
+<div><label>مریض کا نام * / Patient Name</label><input id="name" required></div>
+<div><label>عمر * / Age</label><input id="age" required type="number" min="0"></div>
+<div><label>جنس * / Gender</label><select id="gender" required><option value="">منتخب کریں</option><option>مرد / Male</option><option>عورت / Female</option><option>دیگر / Other</option></select></div>
+<div><label>فون نمبر / Phone</label><input id="phone" inputmode="tel"></div>
+<div class="full"><label>ایڈریس * / Address</label><textarea id="address" required></textarea></div>
+<div class="full"><label>بیماری کی تفصیل * / Case Details</label><textarea id="disease" required></textarea></div>
+<div><label>مریض کی تصویر (اختیاری)</label><input id="photo" type="file" accept="image/*"></div>
+<div><label>میڈیکل رپورٹس (PDF یا تصویر)</label><input id="reports" type="file" accept="image/*,.pdf" multiple></div>
+</div>
+<hr><div class="cardtitle"><h3>تجویز کردہ ادویات / Prescribed Medicines</h3><button type="button" class="secondary" onclick="addMedicine()">+ دوا شامل کریں</button></div>
+<div id="medicines"></div><p class="muted">ابتدائی طور پر تین ادویات کے خانے؛ ضرورت کے مطابق مزید شامل کیے جا سکتے ہیں۔</p>
+<div class="grid"><div><label>وزٹ کی تاریخ</label><input id="visitDate" type="date" required></div><div><label>اگلی ملاقات / Follow-up</label><input id="followup" type="date"></div><div class="full"><label>ڈاکٹر کے نوٹس / Visit Notes</label><textarea id="notes"></textarea></div></div>
+<div class="actions" style="margin-top:15px"><button type="submit">ریکارڈ محفوظ کریں</button><button type="button" class="secondary" onclick="resetForm()">نیا فارم</button></div>
+</form></section>
+<section id="search" class="panel hidden">
+<div class="cardtitle"><h2>مریض تلاش کریں / Patient Search</h2><input style="max-width:360px" id="q" placeholder="سیریل نمبر، نام، ایڈریس یا فون نمبر..." oninput="renderPatients()"></div>
+<div class="tablewrap"><table><thead><tr><th>سیریل</th><th>نام</th><th>عمر / جنس</th><th>فون</th><th>وزٹس</th><th>عمل</th></tr></thead><tbody id="patientRows"></tbody></table></div>
+</section>
+<section id="settings" class="panel hidden">
+<h2>سنک، بیک اپ اور سیٹنگز</h2>
+<p>یہ ایپ پہلے آپ کے اسی ڈیوائس پر ریکارڈ محفوظ کرتی ہے۔ سنک کے لیے Google Apps Script ویب ایپ کا URL درج کریں۔</p>
+<label>Google Apps Script Web App URL</label><input id="endpoint" placeholder="https://script.google.com/macros/s/.../exec">
+<div class="actions" style="margin:12px 0"><button onclick="saveEndpoint()">URL محفوظ کریں</button><button class="gold" onclick="syncNow()">ابھی سنک کریں</button><button class="secondary" onclick="exportBackup()">JSON بیک اپ ڈاؤن لوڈ</button><label class="btn secondary">بیک اپ بحال کریں<input type="file" accept=".json,application/json" onchange="importBackup(event)" hidden></label></div>
+<p class="muted">اہم: خودکار کلاؤڈ سنک کے لیے Apps Script کوڈ انسٹال اور ویب ایپ Deploy کرنا ضروری ہے۔ مقامی ڈیٹا براؤزر کے ڈیٹا/سائٹ اسٹوریج میں رہتا ہے؛ وقتاً فوقتاً JSON بیک اپ بھی محفوظ کریں۔</p>
+<div id="syncLog" class="muted"></div>
+</section>
+<section id="detail" class="panel hidden"></section>
+<section id="printEditor" class="panel hidden">
+<h2>پرنٹ ہدایات میں ترمیم</h2><label>اضافی ہدایات / Advice</label><textarea id="printAdvice">ڈاکٹر کی ہدایات کے مطابق ادویات استعمال کریں۔</textarea>
+<label>کھانے پینے کی ہدایات / Diet Advice</label><textarea id="dietAdvice">متوازن غذا استعمال کریں اور مناسب مقدار میں پانی پئیں۔</textarea>
+<label>پرنٹ ہیڈر / Clinic Heading</label><input id="printHeading" value="اعوان ہومیوپیتھک کلینک | AWAN HOMOEOPATHIC CLINIC">
+<button onclick="printCurrent()">پرنٹ / Save as PDF</button>
+</section>
+</main>
+<script>
+const DB='awanClinicDB', STORE='patients';let db, currentPrint=null, pendingFiles={};
+const $=id=>document.getElementById(id);
+function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id'});r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
+function all(){return new Promise(res=>{let r=db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>res(r.result||[])})}
+function put(p){return new Promise(res=>{let r=db.transaction(STORE,'readwrite').objectStore(STORE).put(p);r.onsuccess=()=>res()})}
+function show(id){['form','search','settings','detail','printEditor'].forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id==='search')renderPatients()}
+function addMedicine(data={}){let d=document.createElement('div');d.className='medicine';d.innerHTML='<input placeholder="دوا / Medicine" class="mname"><input placeholder="طاقت / Potency" class="mpotency"><input placeholder="خوراک / Dosage" class="mdose"><button type="button" class="secondary" onclick="this.parentElement.remove()">×</button>';d.querySelector('.mname').value=data.name||'';d.querySelector('.mpotency').value=data.potency||'';d.querySelector('.mdose').value=data.dose||'';$('medicines').append(d)}
+function resetForm(){ $('patientForm').reset();$('patientId').value='';$('visitId').value='';$('medicines').innerHTML='';for(let i=0;i<3;i++)addMedicine();$('visitDate').value=new Date().toISOString().slice(0,10);$('formTitle').textContent='نیا مریض درج کریں';$('serialLabel').textContent='نیا سیریل نمبر خودکار';pendingFiles={}}
+async function fileData(file){return new Promise((resolve,reject)=>{let r=new FileReader();r.onload=()=>resolve({name:file.name,type:file.type,data:r.result});r.onerror=reject;r.readAsDataURL(file)})}
+$('patientForm').onsubmit=async e=>{e.preventDefault();let patients=await all(),id=$('patientId').value||crypto.randomUUID(),old=patients.find(p=>p.id===id),visitId=$('visitId').value||crypto.randomUUID();
+let meds=[...document.querySelectorAll('.medicine')].map(d=>({name:d.querySelector('.mname').value,potency:d.querySelector('.mpotency').value,dose:d.querySelector('.mdose').value})).filter(m=>m.name||m.potency||m.dose);
+let photo=$('photo').files[0]?await fileData($('photo').files[0]):old?.photo||null;
+let reports=old?.reports||[];for(let f of $('reports').files)reports.push(await fileData(f));
+let visit={id:visitId,date:$('visitDate').value, disease:$('disease').value,medicines:meds,followup:$('followup').value,notes:$('notes').value,updatedAt:Date.now()};
+let visits=old?.visits||[];let ix=visits.findIndex(v=>v.id===visitId);if(ix>=0)visits[ix]=visit;else visits.push(visit);
+let p={id,serial:old?.serial||Math.max(0,...patients.map(x=>Number(x.serial)||0))+1,name:$('name').value,age:$('age').value,gender:$('gender').value,address:$('address').value,phone:$('phone').value,photo,reports,visits,updatedAt:Date.now(),syncStatus:'pending'};
+await put(p);alert('ریکارڈ محفوظ ہوگیا');resetForm();show('search');};
+async function renderPatients(){let q=($('q')?.value||'').toLowerCase(),ps=await all();ps=ps.filter(p=>[p.serial,p.name,p.address,p.phone].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>a.serial-b.serial);
+$('patientRows').innerHTML=ps.map(p=>`<tr><td>${p.serial}</td><td>${esc(p.name)}</td><td>${esc(p.age)}<br>${esc(p.gender)}</td><td>${esc(p.phone||'')}</td><td>${p.visits.length}</td><td><div class="actions"><button onclick="viewPatient('${p.id}')">کھولیں</button><button class="secondary" onclick="editPatient('${p.id}')">نئی وزٹ / ایڈٹ</button></div></td></tr>`).join('')||'<tr><td colspan="6">کوئی مریض نہیں ملا</td></tr>'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function editPatient(id,visitId=null){let p=(await all()).find(x=>x.id===id);if(!p)return;show('form');$('patientId').value=id;$('name').value=p.name;$('age').value=p.age;$('gender').value=p.gender;$('address').value=p.address;$('phone').value=p.phone||'';$('serialLabel').textContent='سیریل نمبر: '+p.serial;$('formTitle').textContent='مریض کا ریکارڈ / وزٹ درج کریں';let v=visitId?p.visits.find(x=>x.id===visitId):null;
+$('visitId').value=v?.id||'';$('disease').value=v?.disease||'';$('visitDate').value=v?.date||new Date().toISOString().slice(0,10);$('followup').value=v?.followup||'';$('notes').value=v?.notes||'';$('medicines').innerHTML='';(v?.medicines||[{},{},{}]).forEach(addMedicine)}
+async function viewPatient(id){let p=(await all()).find(x=>x.id===id);currentPrint=p;show('detail');$('detail').innerHTML=`<div class="cardtitle"><h2>${esc(p.name)} <span class="pill">#${p.serial}</span></h2><div class="actions"><button onclick="editPatient('${id}')">نئی وزٹ</button><button class="gold" onclick="openPrint('${id}')">پرنٹ تیار کریں</button></div></div><p>عمر: ${esc(p.age)} · جنس: ${esc(p.gender)} · فون: ${esc(p.phone||'')}</p><p>ایڈریس: ${esc(p.address)}</p>${p.photo?`<img src="${p.photo.data}" style="max-width:130px;max-height:130px">`:''}<h3>میڈیکل رپورٹس</h3>${p.reports.map((r,i)=>`<a href="${r.data}" download="${esc(r.name)}">${esc(r.name)}</a><br>`).join('')}<h3>وزٹس / Visit History</h3>${p.visits.map(v=>`<div class="panel"><b>${esc(v.date)}</b><p>${esc(v.disease)}</p><p>${v.medicines.map(m=>esc([m.name,m.potency,m.dose].filter(Boolean).join(' — '))).join('<br>')}</p><p>${esc(v.notes||'')}</p><button class="secondary" onclick="editPatient('${id}','${v.id}')">اس وزٹ میں ترمیم</button></div>`).join('')}`}
+async function openPrint(id){currentPrint=(await all()).find(p=>p.id===id);show('printEditor')}
+function printCurrent(){if(!currentPrint)return;let p=currentPrint,ad=esc($('printAdvice').value),diet=esc($('dietAdvice').value),head=esc($('printHeading').value);let visits=p.visits.map(v=>`<h3>وزٹ: ${esc(v.date)}</h3><p>${esc(v.disease)}</p><table><tr><th>Medicine</th><th>Potency</th><th>Dosage</th></tr>${v.medicines.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.potency)}</td><td>${esc(m.dose)}</td></tr>`).join('')}</table><p>${esc(v.notes||'')}</p>`).join('');
+let w=window.open('','_blank');w.document.write(`<html dir="rtl"><meta charset="utf-8"><title>Patient Record</title><style>body{font-family:Arial;padding:30px;color:#173b34}h1{text-align:center;border-bottom:2px solid #b89552;padding:15px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #aaa;padding:8px;text-align:right}.foot{margin-top:24px}</style><h1>${head}</h1><h2>${esc(p.name)} · #${p.serial}</h2><p>عمر: ${esc(p.age)} | جنس: ${esc(p.gender)} | فون: ${esc(p.phone||'')}</p><p>ایڈریس: ${esc(p.address)}</p>${visits}<div class="foot"><h3>اضافی ہدایات</h3><p>${ad}</p><h3>غذا / Diet Advice</h3><p>${diet}</p><hr><p>دستخط / Signature: __________________</p></div><script>window.onload=()=>window.print()<\/script></html>`);w.document.close()}
+async function exportBackup(){let data=await all(),blob=new Blob([JSON.stringify({clinic:'Awan Homeopathic Clinic',exportedAt:new Date().toISOString(),patients:data})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Awan_Clinic_Backup.json';a.click();URL.revokeObjectURL(a.href)}
+async function importBackup(e){let f=e.target.files[0];if(!f)return;let j=JSON.parse(await f.text());for(let p of j.patients||[])await put(p);alert('بیک اپ بحال ہوگیا');}
+function saveEndpoint(){localStorage.setItem('awanEndpoint',$('endpoint').value.trim());alert('URL محفوظ ہوگیا')}
+async function syncNow(){let url=localStorage.getItem('awanEndpoint');if(!url){alert('پہلے Apps Script URL درج کریں');return}let patients=await all();$('syncLog').textContent='سنک جاری ہے...';try{let r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync',patients})});let j=await r.json();$('syncLog').textContent=j.message||'سنک مکمل';$('status').textContent='آخری سنک: '+new Date().toLocaleString()}catch(e){$('syncLog').textContent='سنک نہ ہوسکا؛ ڈیٹا اس ڈیوائس پر محفوظ ہے۔ '+e.message}}
+function autoSync(){if(navigator.onLine&&localStorage.getItem('awanEndpoint'))syncNow()}
+window.addEventListener('online',autoSync);
+(async()=>{await openDB();$('endpoint').value=localStorage.getItem('awanEndpoint')||'';resetForm();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});if(navigator.onLine)setTimeout(autoSync,2500)})();
+</script></body></html>

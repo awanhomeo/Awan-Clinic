@@ -100,7 +100,80 @@ function printCurrent(){if(!currentPrint)return;let p=currentPrint,ad=esc($('pri
 let w=window.open('','_blank');w.document.write(`<html dir="rtl"><meta charset="utf-8"><title>Patient Record</title><style>body{font-family:Arial;padding:30px;color:#173b34}h1{text-align:center;border-bottom:2px solid #b89552;padding:15px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #aaa;padding:8px;text-align:right}.foot{margin-top:24px}</style><h1>${head}</h1><h2>${esc(p.name)} · #${p.serial}</h2><p>عمر: ${esc(p.age)} | جنس: ${esc(p.gender)} | فون: ${esc(p.phone||'')}</p><p>ایڈریس: ${esc(p.address)}</p>${visits}<div class="foot"><h3>اضافی ہدایات</h3><p>${ad}</p><h3>غذا / Diet Advice</h3><p>${diet}</p><hr><p>دستخط / Signature: __________________</p></div><script>window.onload=()=>window.print()<\/script></html>`);w.document.close()}
 async function exportBackup(){let data=await all(),blob=new Blob([JSON.stringify({clinic:'Awan Homeopathic Clinic',exportedAt:new Date().toISOString(),patients:data})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Awan_Clinic_Backup.json';a.click();URL.revokeObjectURL(a.href)}
 async function importBackup(e){let f=e.target.files[0];if(!f)return;let j=JSON.parse(await f.text());for(let p of j.patients||[])await put(p);alert('بیک اپ بحال ہوگیا');}
-function saveEndpoint(){localStorage.setItem('awanEndpoint',$('endpoint').value.trim());alert('URL محفوظ ہوگیا')}
+let googleAccessToken = null;
+
+function connectGoogle() {
+  if (!window.google || !google.accounts?.oauth2) {
+    alert('Google سروس لوڈ نہیں ہوئی۔ صفحہ دوبارہ کھولیں۔');
+    return;
+  }
+
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    callback: async (response) => {
+      if (response.error) {
+        alert('Google اجازت حاصل نہیں ہوئی: ' + response.error);
+        return;
+      }
+
+      googleAccessToken = response.access_token;
+      await testCloudConnection();
+    }
+  });
+
+  tokenClient.requestAccessToken({prompt: 'consent'});
+}
+
+async function testCloudConnection() {
+  $('syncLog').textContent = 'Google Sheets سے رابطہ ہو رہا ہے...';
+
+  try {
+    const response = await fetch(
+      'https://script.googleapis.com/v1/scripts/' +
+      encodeURIComponent(GOOGLE_DEPLOYMENT_ID) + ':run',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + googleAccessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          function: 'getClinicSyncSnapshot',
+          parameters: []
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'API رابطہ ناکام');
+    }
+
+    if (data.error) {
+      throw new Error(
+        data.error.details?.[0]?.errorMessage || data.error.message
+      );
+    }
+
+    const result = data.response?.result;
+
+    if (!result) {
+      throw new Error('Google Sheets سے درست جواب نہیں ملا');
+    }
+
+    $('syncLog').textContent =
+      'Google کنکشن کامیاب! مریضوں کی قطاریں: ' +
+      Math.max(0, result.patients.length - 1) +
+      '، وزٹس کی قطاریں: ' +
+      Math.max(0, result.visits.length - 1);
+
+  } catch (error) {
+    $('syncLog').textContent = 'کنکشن ناکام: ' + error.message;
+  }
+}
+  function saveEndpoint(){localStorage.setItem('awanEndpoint',$('endpoint').value.trim());alert('URL محفوظ ہوگیا')}
 async function syncNow(){let url=localStorage.getItem('awanEndpoint');if(!url){alert('پہلے Apps Script URL درج کریں');return}let patients=await all();$('syncLog').textContent='سنک جاری ہے...';try{let r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync',patients})});let j=await r.json();$('syncLog').textContent=j.message||'سنک مکمل';$('status').textContent='آخری سنک: '+new Date().toLocaleString()}catch(e){$('syncLog').textContent='سنک نہ ہوسکا؛ ڈیٹا اس ڈیوائس پر محفوظ ہے۔ '+e.message}}
 function autoSync(){if(navigator.onLine&&localStorage.getItem('awanEndpoint'))syncNow()}
 window.addEventListener('online',autoSync);

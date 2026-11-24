@@ -105,6 +105,4 @@ async function syncNow(){let url=localStorage.getItem('awanEndpoint');if(!url){a
 function autoSync(){if(navigator.onLine&&localStorage.getItem('awanEndpoint'))syncNow()}
 window.addEventListener('online',autoSync);
 (async()=>{await openDB();$('endpoint').value=localStorage.getItem('awanEndpoint')||'';resetForm();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});if(navigator.onLine)setTimeout(autoSync,2500)})();
-const GOOGLE_CLIENT_ID = "605119911294-n2vsqmhp1sd4vu9aj3p6sfkcblp3ju5h.apps.googleusercontent.com
-";
-</script></body></html>
+const GOOGLE_CLIENT_ID = "605119911294-n2vsqmhp1sd4vu9aj3p6sfkcblp3ju5h.apps.googleusercontent.com";</script></body></html>

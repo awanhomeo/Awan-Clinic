@@ -62,7 +62,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px s
 <div class="actions" style="margin:12px 0"><button onclick="saveEndpoint()">URL محفوظ کریں</button><button class="gold" onclick="syncNow()">ابھی سنک کریں</button><button class="secondary" onclick="exportBackup()">JSON بیک اپ ڈاؤن لوڈ</button><label class="btn secondary">بیک اپ بحال کریں<input type="file" accept=".json,application/json" onchange="importBackup(event)" hidden></label></div>
 <p class="muted">اہم: خودکار کلاؤڈ سنک کے لیے Apps Script کوڈ انسٹال اور ویب ایپ Deploy کرنا ضروری ہے۔ مقامی ڈیٹا براؤزر کے ڈیٹا/سائٹ اسٹوریج میں رہتا ہے؛ وقتاً فوقتاً JSON بیک اپ بھی محفوظ کریں۔</p>
 <div id="syncLog" class="muted"></div>
-<button onclick="connectGoogle()">Google اکاؤنٹ منسلک کریں</button></section><button class="gold" onclick="syncToGoogleCloud()">
+<button onclick="connectGoogle()">Google اکاؤنٹ منسلک کریں</button></section><button class="gold" onclick="syncToGoogleCloud()"><button class="secondary" onclick="syncFromGoogleCloud()">
+  Cloud سے ریکارڈ حاصل کریں
+</button>
   Google Cloud میں ریکارڈ سنک کریں
 </button>
 <section id="detail" class="panel hidden"></section>

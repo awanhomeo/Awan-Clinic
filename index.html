@@ -115,7 +115,7 @@ let w=window.open('','_blank');w.document.write(`<html dir="rtl"><meta charset="
 async function exportBackup(){let data=await all(),blob=new Blob([JSON.stringify({clinic:'Awan Homeopathic Clinic',exportedAt:new Date().toISOString(),patients:data})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Awan_Clinic_Backup.json';a.click();URL.revokeObjectURL(a.href)}
 async function importBackup(e){let f=e.target.files[0];if(!f)return;let j=JSON.parse(await f.text());for(let p of j.patients||[])await put(p);alert('بیک اپ بحال ہوگیا');}
 let googleAccessToken = null;
-
+let syncInProgress = false;
 function connectGoogle() {
   if (!window.google || !google.accounts?.oauth2) {
     alert('Google سروس لوڈ نہیں ہوئی۔ صفحہ دوبارہ کھولیں۔');

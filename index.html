@@ -173,6 +173,97 @@ async function testCloudConnection() {
     $('syncLog').textContent = 'کنکشن ناکام: ' + error.message;
   }
 }
+
+async function syncGoogleNow() {
+  if (!googleAccessToken) {
+    alert('پہلے Google اکاؤنٹ منسلک کریں۔');
+    return;
+  }
+
+  $('syncLog').textContent = 'ڈیٹا Google Sheets پر محفوظ ہو رہا ہے...';
+
+  try {
+    const localPatients = await all();
+
+    const cleanPatients = localPatients.map(p => ({
+      id: p.id,
+      serial: p.serial,
+      name: p.name,
+      age: p.age,
+      gender: p.gender,
+      address: p.address,
+      phone: p.phone,
+      updatedAt: p.updatedAt || 0,
+      visits: (p.visits || []).map(v => ({
+        id: v.id,
+        date: v.date,
+        disease: v.disease,
+        medicines: v.medicines || [],
+        followup: v.followup,
+        notes: v.notes,
+        updatedAt: v.updatedAt || 0
+      }))
+    }));
+
+    const response = await fetch(
+      'https://script.googleapis.com/v1/scripts/' +
+      encodeURIComponent(GOOGLE_DEPLOYMENT_ID) + ':run',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + googleAccessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          function: 'syncPwaData',
+          parameters: [{ patients: cleanPatients }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'سنک ناکام ہوگیا');
+    }
+
+    if (data.error) {
+      throw new Error(
+        data.error.details?.[0]?.errorMessage || data.error.message
+      );
+    }
+
+    const mergedPatients = data.response?.result?.patients;
+
+    if (!Array.isArray(mergedPatients)) {
+      throw new Error('Google Sheets سے درست ڈیٹا موصول نہیں ہوا۔');
+    }
+
+    const latestLocal = await all();
+    const localMap = new Map(latestLocal.map(p => [p.id, p]));
+
+    for (const cloudPatient of mergedPatients) {
+      const local = localMap.get(cloudPatient.id) || {};
+
+      await put({
+        ...cloudPatient,
+        photo: local.photo || null,
+        reports: local.reports || [],
+        syncStatus: 'synced'
+      });
+    }
+
+    $('syncLog').textContent =
+      'سنک کامیاب! کل مریض: ' + mergedPatients.length;
+
+    alert('مریضوں کا ڈیٹا کامیابی سے سنک ہوگیا۔');
+
+  } catch (error) {
+    $('syncLog').textContent = 'سنک ناکام: ' + error.message;
+    alert('سنک میں مسئلہ: ' + error.message);
+  }
+}
+
   function saveEndpoint(){localStorage.setItem('awanEndpoint',$('endpoint').value.trim());alert('URL محفوظ ہوگیا')}
 async function syncNow(){let url=localStorage.getItem('awanEndpoint');if(!url){alert('پہلے Apps Script URL درج کریں');return}let patients=await all();$('syncLog').textContent='سنک جاری ہے...';try{let r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync',patients})});let j=await r.json();$('syncLog').textContent=j.message||'سنک مکمل';$('status').textContent='آخری سنک: '+new Date().toLocaleString()}catch(e){$('syncLog').textContent='سنک نہ ہوسکا؛ ڈیٹا اس ڈیوائس پر محفوظ ہے۔ '+e.message}}
 function autoSync(){if(navigator.onLine&&localStorage.getItem('awanEndpoint'))syncNow()}

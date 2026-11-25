@@ -245,6 +245,114 @@ async function syncToGoogleCloud() {
     $('syncLog').textContent = 'سنک ناکام: ' + error.message;
   }
 }
+  async function syncFromGoogleCloud() {
+  if (!googleAccessToken) {
+    alert('پہلے Google اکاؤنٹ منسلک کریں۔');
+    return;
+  }
+
+  $('syncLog').textContent = 'Cloud سے ریکارڈ حاصل ہو رہے ہیں...';
+
+  try {
+    const response = await fetch(
+      'https://script.googleapis.com/v1/scripts/' +
+      encodeURIComponent(GOOGLE_DEPLOYMENT_ID) + ':run',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + googleAccessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          function: 'getPwaCloudData',
+          parameters: []
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      throw new Error(
+        data.error?.details?.[0]?.errorMessage ||
+        data.error?.message ||
+        'Cloud سے رابطہ ناکام'
+      );
+    }
+
+    const result = data.response?.result;
+
+    if (!result?.ok || !Array.isArray(result.patients)) {
+      throw new Error('Cloud سے درست ریکارڈ موصول نہیں ہوا۔');
+    }
+
+    let added = 0;
+    let updated = 0;
+
+    const localPatients = await all();
+
+    for (const cloud of result.patients) {
+      const old = localPatients.find(p => p.id === cloud.id);
+
+      if (!old) {
+        await put({
+          ...cloud,
+          photo: null,
+          reports: [],
+          syncStatus: 'synced'
+        });
+        added++;
+        continue;
+      }
+
+      const merged = {
+        ...old,
+        ...(Number(cloud.updatedAt) > Number(old.updatedAt)
+          ? {
+              serial: cloud.serial,
+              name: cloud.name,
+              age: cloud.age,
+              gender: cloud.gender,
+              address: cloud.address,
+              phone: cloud.phone,
+              updatedAt: cloud.updatedAt
+            }
+          : {})
+      };
+
+      const visits = [...(old.visits || [])];
+
+      for (const cv of (cloud.visits || [])) {
+        const index = visits.findIndex(v => v.id === cv.id);
+
+        if (index === -1) {
+          visits.push(cv);
+        } else if (
+          Number(cv.updatedAt) > Number(visits[index].updatedAt)
+        ) {
+          visits[index] = cv;
+        }
+      }
+
+      merged.visits = visits;
+      merged.syncStatus = 'synced';
+
+      await put(merged);
+      updated++;
+    }
+
+    $('syncLog').textContent =
+      'Cloud Sync مکمل! نئے مریض: ' + added +
+      '، اپ ڈیٹ مریض: ' + updated;
+
+    if (typeof renderPatients === 'function') {
+      renderPatients();
+    }
+
+  } catch (error) {
+    $('syncLog').textContent = 'Sync ناکام: ' + error.message;
+  }
+}
 async function syncGoogleNow() {
   if (!googleAccessToken) {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');

@@ -179,9 +179,7 @@ function autoSync(){if(navigator.onLine&&localStorage.getItem('awanEndpoint'))sy
 window.addEventListener('online',autoSync);
 (async()=>{await openDB();$('endpoint').value=localStorage.getItem('awanEndpoint')||'';resetForm();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});if(navigator.onLine)setTimeout(autoSync,2500)})();
 const GOOGLE_CLIENT_ID = "605119911294-n2vsqmhp1sd4vu9aj3p6sfkcblp3ju5h.apps.googleusercontent.com";
-
 const GOOGLE_DEPLOYMENT_ID = "AKfycbyrIeUYdMEXyZcjnp3PQV3BjH76CNboe8CxCEnyOdmVNXIHupUAep3E1IWE4Osplivr";
-
 </script>
 </body>
 </html>

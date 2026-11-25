@@ -317,42 +317,52 @@ async function syncToGoogleCloud() {
         continue;
       }
 
-      const merged = {
-        ...old,
-        ...(Number(cloud.updatedAt) > Number(old.updatedAt)
-          ? {
-              serial: cloud.serial,
-              name: cloud.name,
-              age: cloud.age,
-              gender: cloud.gender,
-              address: cloud.address,
-              phone: cloud.phone,
-              updatedAt: cloud.updatedAt
-            }
-          : {})
-      };
+      const localTime = Number(old.updatedAt) || 0;
+const cloudTime = Number(cloud.updatedAt) || 0;
 
-      const visits = [...(old.visits || [])];
+const localIsNewer = localTime > cloudTime;
 
-      for (const cv of (cloud.visits || [])) {
-        const index = visits.findIndex(v => v.id === cv.id);
+const merged = {
+  ...old
+};
 
-        if (index === -1) {
-          visits.push(cv);
-        } else if (
-          Number(cv.updatedAt) > Number(visits[index].updatedAt)
-        ) {
-          visits[index] = cv;
-        }
-      }
+if (!localIsNewer) {
+  merged.serial = cloud.serial;
+  merged.name = cloud.name;
+  merged.age = cloud.age;
+  merged.gender = cloud.gender;
+  merged.address = cloud.address;
+  merged.phone = cloud.phone;
+  merged.updatedAt = cloud.updatedAt;
+}
 
-      merged.visits = visits;
-      merged.syncStatus = 'synced';
+const visits = [...(old.visits || [])];
+let localVisitIsNewer = false;
 
-      await put(merged);
-      updated++;
+for (const cv of (cloud.visits || [])) {
+  const index = visits.findIndex(v => v.id === cv.id);
+
+  if (index === -1) {
+    visits.push(cv);
+  } else {
+    const localVisitTime = Number(visits[index].updatedAt) || 0;
+    const cloudVisitTime = Number(cv.updatedAt) || 0;
+
+    if (localVisitTime > cloudVisitTime) {
+      localVisitIsNewer = true;
+    } else if (cloudVisitTime > localVisitTime) {
+      visits[index] = cv;
     }
+  }
+}
 
+merged.visits = visits;
+
+merged.syncStatus =
+  (localIsNewer || localVisitIsNewer) ? 'pending' : 'synced';
+
+await put(merged);
+updated++;
     $('syncLog').textContent =
       'Cloud Sync مکمل! نئے مریض: ' + added +
       '، اپ ڈیٹ مریض: ' + updated;

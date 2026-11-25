@@ -457,9 +457,18 @@ async function syncGoogleNow() {
 
   function saveEndpoint(){localStorage.setItem('awanEndpoint',$('endpoint').value.trim());alert('URL محفوظ ہوگیا')}
 async function syncNow(){let url=localStorage.getItem('awanEndpoint');if(!url){alert('پہلے Apps Script URL درج کریں');return}let patients=await all();$('syncLog').textContent='سنک جاری ہے...';try{let r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync',patients})});let j=await r.json();$('syncLog').textContent=j.message||'سنک مکمل';$('status').textContent='آخری سنک: '+new Date().toLocaleString()}catch(e){$('syncLog').textContent='سنک نہ ہوسکا؛ ڈیٹا اس ڈیوائس پر محفوظ ہے۔ '+e.message}}
-function autoSync(){if(navigator.onLine&&localStorage.getItem('awanEndpoint'))syncNow()}
-window.addEventListener('online',autoSync);
-(async()=>{await openDB();$('endpoint').value=localStorage.getItem('awanEndpoint')||'';resetForm();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});if(navigator.onLine)setTimeout(autoSync,2500)})();
+async function autoSync() {
+  if (!navigator.onLine || !googleAccessToken) return;
+
+  $('syncLog').textContent = 'خودکار Cloud Sync جاری ہے...';
+
+  await syncToGoogleCloud();
+  await syncFromGoogleCloud();
+}
+
+window.addEventListener('online', autoSync);
+
+setInterval(autoSync, 30000);(async()=>{await openDB();$('endpoint').value=localStorage.getItem('awanEndpoint')||'';resetForm();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});if(navigator.onLine)setTimeout(autoSync,2500)})();
 const GOOGLE_CLIENT_ID = "605119911294-n2vsqmhp1sd4vu9aj3p6sfkcblp3ju5h.apps.googleusercontent.com";
 const GOOGLE_DEPLOYMENT_ID = "AKfycbyrIeUYdMEXyZcjnp3PQV3BjH76CNboe8CxCEnyOdmVNXIHupUAep3E1IWE4Osplivr";
 </script>

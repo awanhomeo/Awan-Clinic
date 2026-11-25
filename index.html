@@ -92,7 +92,17 @@ let reports=old?.reports||[];for(let f of $('reports').files)reports.push(await 
 let visit={id:visitId,date:$('visitDate').value, disease:$('disease').value,medicines:meds,followup:$('followup').value,notes:$('notes').value,updatedAt:Date.now()};
 let visits=old?.visits||[];let ix=visits.findIndex(v=>v.id===visitId);if(ix>=0)visits[ix]=visit;else visits.push(visit);
 let p={id,serial:old?.serial||Math.max(0,...patients.map(x=>Number(x.serial)||0))+1,name:$('name').value,age:$('age').value,gender:$('gender').value,address:$('address').value,phone:$('phone').value,photo,reports,visits,updatedAt:Date.now(),syncStatus:'pending'};
-await put(p);alert('ریکارڈ محفوظ ہوگیا');resetForm();show('search');};
+await put(p);
+
+if (navigator.onLine && googleAccessToken) {
+  await syncFromGoogleCloud();
+  await syncToGoogleCloud();
+}
+
+alert('ریکارڈ محفوظ ہوگیا');
+resetForm();
+show('search');
+};
 async function renderPatients(){let q=($('q')?.value||'').toLowerCase(),ps=await all();ps=ps.filter(p=>[p.serial,p.name,p.address,p.phone].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>a.serial-b.serial);
 $('patientRows').innerHTML=ps.map(p=>`<tr><td>${p.serial}</td><td>${esc(p.name)}</td><td>${esc(p.age)}<br>${esc(p.gender)}</td><td>${esc(p.phone||'')}</td><td>${p.visits.length}</td><td><div class="actions"><button onclick="viewPatient('${p.id}')">کھولیں</button><button class="secondary" onclick="editPatient('${p.id}')">نئی وزٹ / ایڈٹ</button></div></td></tr>`).join('')||'<tr><td colspan="6">کوئی مریض نہیں ملا</td></tr>'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}

@@ -62,7 +62,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px s
 <div class="actions" style="margin:12px 0"><button onclick="saveEndpoint()">URL محفوظ کریں</button><button class="gold" onclick="syncNow()">ابھی سنک کریں</button><button class="secondary" onclick="exportBackup()">JSON بیک اپ ڈاؤن لوڈ</button><label class="btn secondary">بیک اپ بحال کریں<input type="file" accept=".json,application/json" onchange="importBackup(event)" hidden></label></div>
 <p class="muted">اہم: خودکار کلاؤڈ سنک کے لیے Apps Script کوڈ انسٹال اور ویب ایپ Deploy کرنا ضروری ہے۔ مقامی ڈیٹا براؤزر کے ڈیٹا/سائٹ اسٹوریج میں رہتا ہے؛ وقتاً فوقتاً JSON بیک اپ بھی محفوظ کریں۔</p>
 <div id="syncLog" class="muted"></div>
-<button onclick="connectGoogle()">Google اکاؤنٹ منسلک کریں</button></section>
+<button onclick="connectGoogle()">Google اکاؤنٹ منسلک کریں</button></section><button class="gold" onclick="syncToGoogleCloud()">
+  Google Cloud میں ریکارڈ سنک کریں
+</button>
 <section id="detail" class="panel hidden"></section>
 <section id="printEditor" class="panel hidden">
 <h2>پرنٹ ہدایات میں ترمیم</h2><label>اضافی ہدایات / Advice</label><textarea id="printAdvice">ڈاکٹر کی ہدایات کے مطابق ادویات استعمال کریں۔</textarea>
@@ -173,7 +175,76 @@ async function testCloudConnection() {
     $('syncLog').textContent = 'کنکشن ناکام: ' + error.message;
   }
 }
+async function syncToGoogleCloud() {
+  if (!googleAccessToken) {
+    alert('پہلے Google اکاؤنٹ منسلک کریں۔');
+    return;
+  }
 
+  $('syncLog').textContent = 'ریکارڈ سنک ہو رہے ہیں...';
+
+  try {
+    const localPatients = await all();
+
+    const patients = localPatients.map(p => ({
+      id: p.id,
+      serial: p.serial,
+      name: p.name,
+      age: p.age,
+      gender: p.gender,
+      address: p.address,
+      phone: p.phone,
+      updatedAt: p.updatedAt || 0,
+      visits: (p.visits || []).map(v => ({
+        id: v.id,
+        date: v.date,
+        disease: v.disease,
+        medicines: v.medicines || [],
+        followup: v.followup,
+        notes: v.notes,
+        updatedAt: v.updatedAt || 0
+      }))
+    }));
+
+    const response = await fetch(
+      'https://script.googleapis.com/v1/scripts/' +
+      encodeURIComponent(GOOGLE_DEPLOYMENT_ID) + ':run',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + googleAccessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          function: 'syncPwaData',
+          parameters: [{ patients }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      throw new Error(
+        data.error?.details?.[0]?.errorMessage ||
+        data.error?.message ||
+        'سنک ناکام ہوگیا'
+      );
+    }
+
+    const result = data.response?.result;
+
+    if (!result?.ok) {
+      throw new Error('Google سے درست جواب موصول نہیں ہوا۔');
+    }
+
+    $('syncLog').textContent =
+      'سنک کامیاب! مریض: ' + result.patients.length;
+
+  } catch (error) {
+    $('syncLog').textContent = 'سنک ناکام: ' + error.message;
+  }
+}
 async function syncGoogleNow() {
   if (!googleAccessToken) {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');

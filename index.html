@@ -262,6 +262,8 @@ async function syncToGoogleCloud() {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');
     return;
   }
+      if (syncInProgress) return;
+  syncInProgress = true;
   if (syncInProgress) return;
   syncInProgress = true;
   $('syncLog').textContent = 'Cloud سے ریکارڈ حاصل ہو رہے ہیں...';
@@ -373,14 +375,14 @@ updated++;
       renderPatients();
     }
 
-   } catch (error) {
-    $('syncLog').textContent = 'سنک ناکام: ' + error.message;
+  } catch (error) {
+    $('syncLog').textContent = 'Sync ناکام: ' + error.message;
 
   } finally {
     syncInProgress = false;
   }
 }
-async function syncGoogleNow() {
+  async function syncGoogleNow() {
   if (!googleAccessToken) {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');
     return;

@@ -192,7 +192,8 @@ async function syncToGoogleCloud() {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');
     return;
   }
-
+  if (syncInProgress) return;
+  syncInProgress = true;
   $('syncLog').textContent = 'ریکارڈ سنک ہو رہے ہیں...';
 
   try {
@@ -255,9 +256,11 @@ async function syncToGoogleCloud() {
 
   } catch (error) {
     $('syncLog').textContent = 'سنک ناکام: ' + error.message;
+
+  } finally {
+    syncInProgress = false;
   }
-}
-  async function syncFromGoogleCloud() {
+}  async function syncFromGoogleCloud() {
   if (!googleAccessToken) {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');
     return;

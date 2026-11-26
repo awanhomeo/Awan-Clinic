@@ -262,11 +262,9 @@ async function syncToGoogleCloud() {
     alert('پہلے Google اکاؤنٹ منسلک کریں۔');
     return;
   }
-      if (syncInProgress) return;
+   if (syncInProgress) return;
   syncInProgress = true;
-  if (syncInProgress) return;
-  syncInProgress = true;
-  $('syncLog').textContent = 'Cloud سے ریکارڈ حاصل ہو رہے ہیں...';
+    $('syncLog').textContent = 'Cloud سے ریکارڈ حاصل ہو رہے ہیں...';
 
   try {
     const response = await fetch(

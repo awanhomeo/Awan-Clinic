@@ -95,10 +95,9 @@ let p={id,serial:old?.serial||Math.max(0,...patients.map(x=>Number(x.serial)||0)
 await put(p);
 
 if (navigator.onLine && googleAccessToken) {
-  await syncFromGoogleCloud();
   await syncToGoogleCloud();
+  await syncFromGoogleCloud();
 }
-
 alert('ریکارڈ محفوظ ہوگیا');
 resetForm();
 show('search');

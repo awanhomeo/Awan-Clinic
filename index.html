@@ -475,8 +475,7 @@ updated++;
   function saveEndpoint(){localStorage.setItem('awanEndpoint',$('endpoint').value.trim());alert('URL محفوظ ہوگیا')}
 async function syncNow(){let url=localStorage.getItem('awanEndpoint');if(!url){alert('پہلے Apps Script URL درج کریں');return}let patients=await all();$('syncLog').textContent='سنک جاری ہے...';try{let r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync',patients})});let j=await r.json();$('syncLog').textContent=j.message||'سنک مکمل';$('status').textContent='آخری سنک: '+new Date().toLocaleString()}catch(e){$('syncLog').textContent='سنک نہ ہوسکا؛ ڈیٹا اس ڈیوائس پر محفوظ ہے۔ '+e.message}}
 async function autoSync() {
-  if (!navigator.onLine || !googleAccessToken) return;
-
+  if (!navigator.onLine || !googleAccessToken || syncInProgress) return;
   $('syncLog').textContent = 'خودکار Cloud Sync جاری ہے...';
 
   await syncToGoogleCloud();
